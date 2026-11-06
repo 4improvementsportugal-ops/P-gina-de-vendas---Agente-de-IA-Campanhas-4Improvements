@@ -236,23 +236,6 @@ a.btn:not(.lead-submit):focus-visible { outline-color:#38fc5a; }
 .hero-copy{max-width:920px}
 #formulario-final{scroll-margin-top:95px}
 </style>
-<!-- Meta Pixel Code -->
-<script>
-!function(f,b,e,v,n,t,s)
-{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];
-s.parentNode.insertBefore(t,s)}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1190659816630727');
-fbq('track', 'PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
-/></noscript>
-<!-- End Meta Pixel Code -->
 </head>
 <body>
 <svg aria-hidden="true" style="width:0;height:0;position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
@@ -364,7 +347,7 @@ src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
 <div class="lead-field"><label for="name-final">Nome completo *</label><input autocomplete="name" id="name-final" maxlength="120" name="name" placeholder="Como se chama?" required="" type="text"/></div>
 <div class="lead-field"><label for="email-final">E-mail profissional *</label><input autocomplete="email" id="email-final" inputmode="email" maxlength="180" name="email" placeholder="nome@empresa.pt" required="" type="email"/></div>
 <div class="lead-two-fields">
-<div class="lead-field"><label for="phone-final">WhatsApp <span>(opcional)</span></label><input autocomplete="tel" id="phone-final" maxlength="30" name="phone" placeholder="+351 9xx xxx xxx" type="tel"/></div>
+<div class="lead-field"><label for="phone-final">WhatsApp *</label><input autocomplete="tel" id="phone-final" inputmode="tel" maxlength="30" name="phone" placeholder="+351 9xx xxx xxx" required="" type="tel"/></div>
 <div class="lead-field"><label for="profile-final">O seu perfil</label><select id="profile-final" name="profile"><option value="">Selecionar</option><option>Empresário/a</option><option>Diretor/a comercial</option><option>Gestor/a de marketing</option><option>Responsável de vendas</option><option>Outro</option></select></div>
 </div>
 <div aria-hidden="true" class="lead-honeypot"><label for="website-final">Website</label><input autocomplete="off" id="website-final" name="website" tabindex="-1" type="text"/></div>
@@ -372,7 +355,7 @@ src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
 <button class="btn lead-submit" type="submit">Quero ser contactado <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
 <p aria-live="polite" class="lead-msg" hidden="" role="status"></p>
 </form>
-<p class="lead-alternative">Prefere agendar já? <a href="https://api.leadconnectorhq.com/widget/booking/H5vPg7VYHLOraN6VSC6k" rel="noopener noreferrer" target="_blank">Explorar opções</a></p>
+
 </div>
 </div></section>
 </main>
@@ -389,7 +372,7 @@ src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
   // Para ativar a captação de contactos, coloque o endereço HTTPS de um webhook
   // de entrada do seu CRM (ex.: workflow do GoHighLevel) e teste a receção real.
   // O URL de agendamento abaixo NÃO é um endpoint de envio de formulários.
-  const LEAD_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/lwdT8imgib43lDC9X1SC/webhook-trigger/DRAMI52c99sAEBNe25w2";
+  const LEAD_WEBHOOK_URL = "";
   const BOOKING_URL = "https://api.leadconnectorhq.com/widget/booking/H5vPg7VYHLOraN6VSC6k";
   const params=new URLSearchParams(window.location.search);
   const feedback=(form,message,success=false)=>{
@@ -402,28 +385,31 @@ src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
     el.hidden=false;el.classList.toggle('is-success',success);
   };
   document.querySelectorAll('[data-lead-form]').forEach(form=>{
+    const phoneField=form.elements.namedItem('phone');
+    phoneField.addEventListener('input',()=>phoneField.setCustomValidity(''));
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       form.querySelector('.lead-msg').hidden=true;
       if(!form.checkValidity()){form.reportValidity();return;}
+      const phoneField=form.elements.namedItem('phone');
+      if(!phoneField.value.trim()){
+        phoneField.setCustomValidity('Por favor, indique o seu número de WhatsApp.');
+        phoneField.reportValidity();
+        return;
+      }
+      phoneField.setCustomValidity('');
       if(form.elements.namedItem('website').value.trim())return;
+      // Sem webhook, a validação permite continuar para o agendamento,
+      // mas os dados do formulário não são guardados pelo HTML.
       if(!LEAD_WEBHOOK_URL){
-        feedback(form,'Este formulário precisa de ser ligado ao CRM para receber contactos. Entretanto, pode utilizar o agendamento:');
+        window.location.assign(BOOKING_URL);
         return;
       }
       const button=form.querySelector('button[type="submit"]');
-      const fullName=form.elements.namedItem('name').value.trim();
-      const nameParts=fullName.split(/\s+/).filter(Boolean);
-      const phoneRaw=form.elements.namedItem('phone').value.trim();
-      const phoneDigits=phoneRaw.replace(/\D/g,'').replace(/^00/,'');
-      const phone=phoneDigits?(phoneDigits.startsWith('351')?phoneDigits:'351'+phoneDigits):'';
       const payload={
-        name:fullName,
-        first_name:nameParts[0]||'',
-        last_name:nameParts.slice(1).join(' '),
+        name:form.elements.namedItem('name').value.trim(),
         email:form.elements.namedItem('email').value.trim(),
-        phone:phone,
-        phone_raw:phoneRaw,
+        phone:form.elements.namedItem('phone').value.trim(),
         profile:form.elements.namedItem('profile').value,
         consent:true,product:'Campanhas publicitárias + Atendimento com IA + Follow-up',
         source:'lp-campanhas-ia-followup',form_location:form.dataset.leadForm,
@@ -438,11 +424,10 @@ src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
           method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
         });
         if(!res.ok)throw new Error('Webhook respondeu '+res.status);
-        if(typeof window.fbq==='function')window.fbq('track','Lead');
-        form.reset();feedback(form,'Pedido enviado com sucesso. Obrigado! Entraremos em contacto consigo.',true);
+        window.location.assign(BOOKING_URL);
       }catch(error){
         console.error('Erro ao enviar pedido:',error);
-        feedback(form,'Não foi possível enviar o pedido. Por favor, tente novamente ou utilize o botão «Explorar opções».');
+        feedback(form,'Não foi possível enviar o pedido. Por favor, tente novamente.');
       }finally{
         button.disabled=false;
         button.innerHTML='Quero ser contactado <svg aria-hidden="true"><use href="#i-arrow"></use></svg>';
