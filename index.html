@@ -236,6 +236,23 @@ a.btn:not(.lead-submit):focus-visible { outline-color:#38fc5a; }
 .hero-copy{max-width:920px}
 #formulario-final{scroll-margin-top:95px}
 </style>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1190659816630727');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1190659816630727&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </head>
 <body>
 <svg aria-hidden="true" style="width:0;height:0;position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
@@ -372,7 +389,7 @@ a.btn:not(.lead-submit):focus-visible { outline-color:#38fc5a; }
   // Para ativar a captação de contactos, coloque o endereço HTTPS de um webhook
   // de entrada do seu CRM (ex.: workflow do GoHighLevel) e teste a receção real.
   // O URL de agendamento abaixo NÃO é um endpoint de envio de formulários.
-  const LEAD_WEBHOOK_URL = "";
+  const LEAD_WEBHOOK_URL = "https://services.leadconnectorhq.com/hooks/lwdT8imgib43lDC9X1SC/webhook-trigger/DRAMI52c99sAEBNe25w2";
   const BOOKING_URL = "https://api.leadconnectorhq.com/widget/booking/H5vPg7VYHLOraN6VSC6k";
   const params=new URLSearchParams(window.location.search);
   const feedback=(form,message,success=false)=>{
@@ -406,10 +423,18 @@ a.btn:not(.lead-submit):focus-visible { outline-color:#38fc5a; }
         return;
       }
       const button=form.querySelector('button[type="submit"]');
+      const fullName=form.elements.namedItem('name').value.trim();
+      const nameParts=fullName.split(/\s+/).filter(Boolean);
+      const phoneRaw=form.elements.namedItem('phone').value.trim();
+      const phoneDigits=phoneRaw.replace(/\D/g,'').replace(/^00/,'');
+      const phone=phoneDigits?(phoneDigits.startsWith('351')?phoneDigits:'351'+phoneDigits):'';
       const payload={
-        name:form.elements.namedItem('name').value.trim(),
+        name:fullName,
+        first_name:nameParts[0]||'',
+        last_name:nameParts.slice(1).join(' '),
         email:form.elements.namedItem('email').value.trim(),
-        phone:form.elements.namedItem('phone').value.trim(),
+        phone:phone,
+        phone_raw:phoneRaw,
         profile:form.elements.namedItem('profile').value,
         consent:true,product:'Campanhas publicitárias + Atendimento com IA + Follow-up',
         source:'lp-campanhas-ia-followup',form_location:form.dataset.leadForm,
@@ -424,7 +449,8 @@ a.btn:not(.lead-submit):focus-visible { outline-color:#38fc5a; }
           method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
         });
         if(!res.ok)throw new Error('Webhook respondeu '+res.status);
-        window.location.assign(BOOKING_URL);
+        if(typeof window.fbq==='function')window.fbq('track','Lead');
+        setTimeout(()=>window.location.assign(BOOKING_URL),600);
       }catch(error){
         console.error('Erro ao enviar pedido:',error);
         feedback(form,'Não foi possível enviar o pedido. Por favor, tente novamente.');
